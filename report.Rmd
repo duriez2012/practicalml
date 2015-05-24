@@ -1,0 +1,121 @@
+---
+title: "practicalML"
+author: "Tony Duriez"
+date: "Sunday, May 24, 2015"
+output: html_document
+---
+
+## Getting and Cleaning the data
+
+First, we import the data needed for the project
+
+```{r}
+data = read.csv("~/ImperialCollege/Coursera/PracticalMachineLearning/courserapracticalml/pml-training.csv")
+eval = read.csv("~/ImperialCollege/Coursera/PracticalMachineLearning/courserapracticalml/pml-testing.csv")
+```
+
+Then, we need to clean the data and select those that can be useful to predict the classe. We decided to get rid of all the variables that were mainly empty or NA, and also the timestamp variables which were irrelevant for our prediction.
+
+```{r}
+data[data==""] <- NA
+data <- data[,colSums(is.na(data)) <= 10000] 
+myvars <- names(data) %in% c("user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "X", "new_window", "num_window")
+data <- data[!myvars]
+```
+
+
+## Training and Testing sets
+
+We divide our data into train and test set to keep part of the data unused for fitting our model so that we will have a better estimate of the error when applying the model to the unused test set.
+
+```{r}
+library(caret)
+inTrain <- createDataPartition(data$classe, p =0.75, list = FALSE)
+train <- data[inTrain,]
+test <- data[-inTrain,]
+```
+
+## Simple Tree model with 10-fold cross validation
+
+The simple tree model with a 10-fold cross validation can be applied to all the data because the technique includes itself a partitioning of the data.
+
+### Training & Testing the model 
+```{r}
+set.seed(100)
+tc <- trainControl("cv",10)
+fitTreeCV <- train(data$classe ~ ., data = data, method ="rpart", trControl=tc)
+fitTreeCV
+```
+
+The accuracy given by this model is 0.5161745, which is not high enough but still far better than a random which would give an accuracy of 0.20 (5 choices for class). To better understand the lack of accuracy, we separately calculating a confusion matrix by separating manually the test and train set, and figured that the class A was over predicted and classes D and E under predicted. The dataset, might be biaised due to a number of samples class A higher than the other classes.
+
+
+## Random Forest model
+
+### Training the model
+The Random Forest model was first used to fit the data.
+
+```
+fitRf <- train(train$classe ~ ., data = train, method ="rf")
+fitRf
+
+Random Forest 
+
+14718 samples
+   52 predictor
+    5 classes: 'A', 'B', 'C', 'D', 'E' 
+
+No pre-processing
+Resampling: Bootstrapped (25 reps) 
+
+Summary of sample sizes: 14718, 14718, 14718, 14718, 14718, 14718, ... 
+
+Resampling results across tuning parameters:
+
+  mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
+   2    0.9894330  0.9866284  0.001893322  0.002391433
+  27    0.9901775  0.9875714  0.001592911  0.002009776
+  52    0.9823738  0.9776952  0.004183121  0.005293956
+
+Accuracy was used to select the optimal model using  the largest value.
+The final value used for the model was mtry = 27.
+```
+
+### Evaluating the model
+```
+pred <- predict(fitRf, newdata = test)
+confusionMatrix(pred, test$classe)
+
+          Reference
+Prediction    A    B    C    D    E
+         A 1391    5    0    0    0
+         B    4  944    6    0    1
+         C    0    0  845    8    3
+         D    0    0    4  794    1
+         E    0    0    0    2  896
+
+Overall Statistics
+                                          
+               Accuracy : 0.9931          
+                 95% CI : (0.9903, 0.9952)
+    No Information Rate : 0.2845          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9912          
+ Mcnemar's Test P-Value : NA              
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+Sensitivity            0.9971   0.9947   0.9883   0.9876   0.9945
+Specificity            0.9986   0.9972   0.9973   0.9988   0.9995
+Pos Pred Value         0.9964   0.9885   0.9871   0.9937   0.9978
+Neg Pred Value         0.9989   0.9987   0.9975   0.9976   0.9988
+Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
+Detection Rate         0.2836   0.1925   0.1723   0.1619   0.1827
+Detection Prevalence   0.2847   0.1947   0.1746   0.1629   0.1831
+Balanced Accuracy      0.9979   0.9960   0.9928   0.9932   0.9970
+```
+
+The model gives an accuracy of 99.31% on unseen data (test set), which shows that this random forest, computationaly expensive, is really appropriate and we will predict future samples with high confidence.
+
