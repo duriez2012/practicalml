@@ -125,7 +125,7 @@ fitTreeCV &lt;- train(data$classe ~ ., data = data, method =&quot;rpart&quot;, t
 <h2>Random Forest model</h2>
 <div id="training-the-model" class="section level3">
 <h3>Training the model</h3>
-<p>The Random Forest model was first used to fit the data.</p>
+<p>The Random Forest model was then used to see if it fits better the data.</p>
 <pre><code>fitRf &lt;- train(train$classe ~ ., data = train, method =&quot;rf&quot;)
 fitRf
 
