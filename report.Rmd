@@ -53,7 +53,7 @@ The accuracy given by this model is 0.5161745, which is not high enough but stil
 ## Random Forest model
 
 ### Training the model
-The Random Forest model was first used to fit the data.
+The Random Forest model was then used to see if it fits better the data.
 
 ```
 fitRf <- train(train$classe ~ ., data = train, method ="rf")
